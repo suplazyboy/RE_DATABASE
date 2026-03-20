@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # ===== PostgreSQL（如果本地没有运行的话） =====
+  # 如果已有 PostgreSQL 实例，注释掉此 service，直接配置 DATABASE_URL
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-materials}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-materials_pass}
+      POSTGRES_DB: ${DB_NAME:-materials_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # 如果需要初始化数据，挂载 SQL 文件
+      # - ./data/ALL_INFO.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-materials}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== Redis 缓存（可选） =====
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== 后端 =====
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-materials}:${DB_PASSWORD:-materials_pass}@db:5432/${DB_NAME:-materials_db}
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: '["http://localhost", "http://localhost:80"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ===== 前端 =====
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

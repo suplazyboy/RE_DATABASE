@@ -1,0 +1,10 @@
+INFO:     Started server process [28280]
+INFO:     Waiting for application startup.
+2026-03-18 17:08:09 - app.main - INFO - Starting up application...
+2026-03-18 17:08:09 - app.main - INFO - Database connection test successful
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8000): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+INFO:     Waiting for application shutdown.
+2026-03-18 17:08:09 - app.main - INFO - Shutting down application...
+2026-03-18 17:08:09 - app.main - INFO - Database connections disposed
+INFO:     Application shutdown complete.

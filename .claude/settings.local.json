@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile app/models/material.py)",
+      "Bash(python -m py_compile app/config.py app/database.py app/main.py)",
+      "Bash(python:*)",
+      "Bash(find F:DataBaseAPIfrontend -type f -name *.tsx -o -name *.ts)",
+      "Bash(pnpm build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/statistics/elements_frequency\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/statistics/crystal_systems\")",
+      "Bash(PGPASSWORD=123456 psql -h localhost -p 5432 -U postgres -d All_information -c \"SELECT symmetry FROM materials WHERE symmetry IS NOT NULL LIMIT 1;\" 2>&1)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/materials?per_page=1\")",
+      "Bash(curl:*)"
+    ]
+  }
+}
