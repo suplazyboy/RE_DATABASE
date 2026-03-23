@@ -1,22 +1,31 @@
-# ===== 构建阶段 =====
+# ===== Build Stage =====
 FROM node:20-alpine AS builder
 
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
 
+# Copy dependency files first (layer cache)
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Copy source and build
 COPY . .
-RUN npm run build
+RUN pnpm run build
 
-# ===== 生产阶段 =====
-FROM nginx:alpine
+# ===== Production Stage =====
+FROM nginx:1.27-alpine
 
-# 复制构建产物
+# Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Nginx 配置（SPA 路由 + API 代理）
+# Copy Nginx SPA config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD wget -qO- http://localhost/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
