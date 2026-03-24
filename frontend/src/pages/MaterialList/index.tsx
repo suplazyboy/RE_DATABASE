@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMaterials } from '../../hooks/useMaterials';
 import { formatFormula } from '../../utils/format';
 import type { MaterialSummary } from '../../types/material';
+import { RARE_EARTH_ELEMENTS } from '../../utils/constants';
 
 const { Title } = Typography;
 
@@ -74,7 +75,15 @@ export default function MaterialList() {
       dataIndex: 'elements',
       key: 'elements',
       render: (elements: string[] | null) =>
-        elements?.map((el) => <Tag key={el}>{el}</Tag>) ?? '-',
+        elements?.map((el) => (
+          <Tag
+            key={el}
+            color={RARE_EARTH_ELEMENTS.includes(el) ? 'gold' : 'default'}
+            style={RARE_EARTH_ELEMENTS.includes(el) ? { fontWeight: 600 } : {}}
+          >
+            {el}
+          </Tag>
+        )) ?? '-',
       width: 150,
     },
     {
@@ -204,6 +213,13 @@ export default function MaterialList() {
         }}
         onChange={handleTableChange}
         size="middle"
+        onRow={(record) => ({
+          style: {
+            borderLeft: record.elements?.some(el => RARE_EARTH_ELEMENTS.includes(el))
+              ? '3px solid #d4a017'
+              : '3px solid transparent',
+          },
+        })}
         scroll={{ x: 1200 }}
       />
     </div>

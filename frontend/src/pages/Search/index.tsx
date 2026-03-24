@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Tag, Space, Input, Button, Typography, Row, Col, Card, Collapse, Checkbox, Select, InputNumber, Divider } from 'antd';
+import { Table, Tag, Space, Input, Button, Typography, Row, Col, Card, Collapse, Checkbox, Select, InputNumber, Divider, Radio } from 'antd';
 import type { TablePaginationConfig, SorterResult, FilterValue } from 'antd/es/table/interface';
 import { useSearchParams } from 'react-router-dom';
 import { useSearch } from '../../hooks/useSearch';
 import { formatFormula } from '../../utils/format';
 import type { MaterialSummary } from '../../types/material';
 import { SearchOutlined, ClearOutlined } from '@ant-design/icons';
+import { RARE_EARTH_ELEMENTS, RARE_EARTH_NAMES } from '../../utils/constants';
 
 const { Title } = Typography;
 const { Panel } = Collapse;
@@ -43,6 +44,9 @@ export default function Search() {
   const crystal_system = searchParams.get('crystal_system') || undefined;
   const is_magnetic = searchParams.get('is_magnetic') === 'true' ? true :
                       searchParams.get('is_magnetic') === 'false' ? false : undefined;
+  const contains_rare_earth = searchParams.get('contains_rare_earth') === 'true' ? true :
+                              searchParams.get('contains_rare_earth') === 'false' ? false : undefined;
+  const rare_earth_type = searchParams.get('rare_earth_type') || undefined;
 
   const params = {
     page,
@@ -57,6 +61,8 @@ export default function Search() {
     is_stable,
     crystal_system,
     is_magnetic,
+    contains_rare_earth,
+    rare_earth_type,
   };
 
   const { data, isLoading } = useSearch(params);
@@ -72,8 +78,10 @@ export default function Search() {
     if (is_stable !== undefined) filters.is_stable = is_stable;
     if (crystal_system) filters.crystal_system = crystal_system;
     if (is_magnetic !== undefined) filters.is_magnetic = is_magnetic;
+    if (contains_rare_earth !== undefined) filters.contains_rare_earth = contains_rare_earth;
+    if (rare_earth_type) filters.rare_earth_type = rare_earth_type;
     setActiveFilters(filters);
-  }, [formula, elements, band_gap_min, band_gap_max, is_metal, is_stable, crystal_system, is_magnetic]);
+  }, [formula, elements, band_gap_min, band_gap_max, is_metal, is_stable, crystal_system, is_magnetic, contains_rare_earth, rare_earth_type]);
 
   // 更新 URL 参数
   const updateSearchParams = useCallback((newParams: Record<string, any>) => {
@@ -198,6 +206,10 @@ export default function Search() {
         return `Crystal System: ${value}`;
       case 'is_magnetic':
         return `Magnetic: ${value ? 'Yes' : 'No'}`;
+      case 'contains_rare_earth':
+        return `Contains Rare Earth: ${value ? 'Yes' : 'No'}`;
+      case 'rare_earth_type':
+        return `Rare Earth Type: ${value === 'light' ? 'Light' : value === 'heavy' ? 'Heavy' : value}`;
       default:
         return `${key}: ${value}`;
     }
@@ -345,6 +357,59 @@ export default function Search() {
                       style={{ width: '100%' }}
                       options={CRYSTAL_SYSTEM_OPTIONS.map(sys => ({ label: sys, value: sys }))}
                     />
+                  </div>
+                </Space>
+              </Panel>
+
+              {/* 稀土筛选 */}
+              <Panel header="稀土筛选" key="rare_earth">
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Checkbox
+                    checked={contains_rare_earth === true}
+                    indeterminate={contains_rare_earth === undefined}
+                    onChange={() => {
+                      const current = contains_rare_earth;
+                      const next = current === undefined ? true : current === true ? false : undefined;
+                      updateSearchParams({ contains_rare_earth: next });
+                    }}
+                  >
+                    仅显示含稀土材料
+                  </Checkbox>
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ marginBottom: 4 }}>稀土类型</div>
+                    <Radio.Group
+                      value={rare_earth_type || ''}
+                      onChange={(e) => updateSearchParams({ rare_earth_type: e.target.value || undefined })}
+                      style={{ width: '100%' }}
+                    >
+                      <Radio.Button value="">全部</Radio.Button>
+                      <Radio.Button value="light">轻稀土</Radio.Button>
+                      <Radio.Button value="heavy">重稀土</Radio.Button>
+                    </Radio.Group>
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ marginBottom: 4 }}>单个稀土元素</div>
+                    <Space wrap>
+                      {RARE_EARTH_ELEMENTS.map(element => (
+                        <Tag.CheckableTag
+                          key={element}
+                          checked={elements?.includes(element) || false}
+                          onChange={(checked) => {
+                            const currentElements = elements ? elements.split(',').map(e => e.trim()) : [];
+                            let newElements: string[];
+                            if (checked) {
+                              newElements = [...currentElements, element];
+                            } else {
+                              newElements = currentElements.filter(e => e !== element);
+                            }
+                            updateSearchParams({ elements: newElements.length > 0 ? newElements.join(',') : undefined });
+                          }}
+                          style={{ marginBottom: 4 }}
+                        >
+                          {element} {RARE_EARTH_NAMES[element]}
+                        </Tag.CheckableTag>
+                      ))}
+                    </Space>
                   </div>
                 </Space>
               </Panel>

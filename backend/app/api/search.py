@@ -136,6 +136,10 @@ async def search_materials(
     density_min: float | None = Query(None, ge=0.0),
     density_max: float | None = Query(None, ge=0.0),
 
+    # 稀土筛选
+    contains_rare_earth: bool | None = Query(None, description="是否包含稀土元素"),
+    rare_earth_type: str | None = Query(None, description="稀土类型: 'light' | 'heavy'"),
+
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -171,6 +175,8 @@ async def search_materials(
         volume_max=volume_max,
         density_min=density_min,
         density_max=density_max,
+        contains_rare_earth=contains_rare_earth,
+        rare_earth_type=rare_earth_type,
     )
 
     service = MaterialService(db)

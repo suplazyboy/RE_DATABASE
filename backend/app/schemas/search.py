@@ -52,3 +52,7 @@ class MaterialSearchParams(BaseModel):
     volume_max: float | None = Field(default=None, ge=0.0)
     density_min: float | None = Field(default=None, ge=0.0)
     density_max: float | None = Field(default=None, ge=0.0)
+
+    # 稀土筛选
+    contains_rare_earth: bool | None = Field(default=None, description="是否包含稀土元素")
+    rare_earth_type: str | None = Field(default=None, description="稀土类型: 'light' | 'heavy'")

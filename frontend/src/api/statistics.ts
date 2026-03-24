@@ -35,6 +35,21 @@ export interface StabilityDistribution {
   total: number;
 }
 
+export interface RareEarthSummary {
+  total_with_rare_earth: number;
+  ratio: number;
+  light_re_count: number;
+  heavy_re_count: number;
+  most_common: Array<{ element: string; count: number }>;
+}
+
+export interface RareEarthFrequencyItem {
+  element: string;
+  name_cn: string;
+  count: number;
+  type: 'light' | 'heavy';
+}
+
 export const statisticsApi = {
   // 获取统计摘要
   summary: async (): Promise<SummaryStats> => {
@@ -63,6 +78,18 @@ export const statisticsApi = {
   // 获取稳定性分布
   stabilityDistribution: async (): Promise<StabilityDistribution> => {
     const { data } = await apiClient.get('/statistics/stability_distribution');
+    return data;
+  },
+
+  // 获取稀土统计摘要
+  rareEarthSummary: async (): Promise<RareEarthSummary> => {
+    const { data } = await apiClient.get('/statistics/rare_earth_summary');
+    return data;
+  },
+
+  // 获取稀土元素频率
+  rareEarthFrequency: async (): Promise<RareEarthFrequencyItem[]> => {
+    const { data } = await apiClient.get('/statistics/rare_earth_frequency');
     return data;
   },
 };

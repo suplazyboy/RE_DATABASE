@@ -6,6 +6,7 @@ Converts search parameters to SQLAlchemy where clauses.
 from sqlalchemy import and_, cast, Integer, Text
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from app.models.material import Material
+from app.utils.constants import RARE_EARTH_ELEMENTS, LIGHT_RE, HEAVY_RE
 
 
 class FilterBuilder:
@@ -92,6 +93,28 @@ class FilterBuilder:
             # 使用 JSONB 字段的 ->> 操作符提取文本值并转换为整数
             self.conditions.append(
                 cast(Material.symmetry['number'].astext, Integer) == space_group_number
+            )
+
+    def add_rare_earth_filter(self, contains_rare_earth: bool | None, rare_earth_type: str | None):
+        """稀土元素过滤"""
+        if contains_rare_earth is True:
+            # 包含任意稀土元素
+            self.conditions.append(
+                Material.elements.op("&&")(cast(RARE_EARTH_ELEMENTS, PG_ARRAY(Text)))
+            )
+        elif contains_rare_earth is False:
+            # 不含任何稀土元素
+            self.conditions.append(
+                ~Material.elements.op("&&")(cast(RARE_EARTH_ELEMENTS, PG_ARRAY(Text)))
+            )
+
+        if rare_earth_type == "light":
+            self.conditions.append(
+                Material.elements.op("&&")(cast(LIGHT_RE, PG_ARRAY(Text)))
+            )
+        elif rare_earth_type == "heavy":
+            self.conditions.append(
+                Material.elements.op("&&")(cast(HEAVY_RE, PG_ARRAY(Text)))
             )
 
     def build(self):

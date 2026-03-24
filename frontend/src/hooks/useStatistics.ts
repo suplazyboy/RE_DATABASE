@@ -45,3 +45,21 @@ export function useStabilityDistribution() {
     staleTime: 10 * 60 * 1000,
   });
 }
+
+// 稀土统计摘要
+export function useRareEarthSummary() {
+  return useQuery({
+    queryKey: ['statistics', 'rareEarthSummary'],
+    queryFn: statisticsApi.rareEarthSummary,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+// 稀土元素频率
+export function useRareEarthFrequency() {
+  return useQuery({
+    queryKey: ['statistics', 'rareEarthFrequency'],
+    queryFn: statisticsApi.rareEarthFrequency,
+    staleTime: 10 * 60 * 1000,
+  });
+}

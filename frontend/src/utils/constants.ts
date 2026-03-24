@@ -45,3 +45,20 @@ export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 // 默认分页大小
 export const DEFAULT_PAGE_SIZE = 20;
+
+// 稀土元素定义
+export const RARE_EARTH_ELEMENTS = [
+  'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd',
+  'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu',  // 镧系 15 种
+  'Sc', 'Y',                                     // 另外 2 种
+];
+
+export const RARE_EARTH_NAMES: Record<string, string> = {
+  La: '镧', Ce: '铈', Pr: '镨', Nd: '钕', Pm: '钷', Sm: '钐', Eu: '铕',
+  Gd: '钆', Tb: '铽', Dy: '镝', Ho: '钬', Er: '铒', Tm: '铥', Yb: '镱',
+  Lu: '镥', Sc: '钪', Y: '钇',
+};
+
+// 轻/重稀土分组
+export const LIGHT_RE = ['La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu'];
+export const HEAVY_RE = ['Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Sc', 'Y'];

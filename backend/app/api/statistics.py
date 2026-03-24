@@ -5,10 +5,12 @@ Provides database analytics and distribution data.
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func, text, bindparam, String
+from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 
 from app.database import get_db
 from app.models.material import Material
+from app.utils.constants import RARE_EARTH_ELEMENTS, LIGHT_RE, HEAVY_RE, RARE_EARTH_NAMES_CN
 
 router = APIRouter()
 
@@ -155,3 +157,114 @@ async def get_stability_distribution(
         "unknown": null_count or 0,
         "total": (stable_count or 0) + (unstable_count or 0) + (null_count or 0)
     }
+
+
+def _pg_array_literal(elements: list[str]) -> str:
+    """将 Python list 转为 PostgreSQL 数组字面量，如 ARRAY['La','Ce',...]"""
+    inner = ",".join(f"'{e}'" for e in elements)
+    return f"ARRAY[{inner}]"
+
+
+@router.get("/rare_earth_summary")
+async def get_rare_earth_summary(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get summary statistics about rare earth materials.
+    """
+    re_arr    = _pg_array_literal(RARE_EARTH_ELEMENTS)
+    light_arr = _pg_array_literal(LIGHT_RE)
+    heavy_arr = _pg_array_literal(HEAVY_RE)
+
+    result = await db.execute(text(f"""
+        SELECT
+            COUNT(*) as total_with_rare_earth,
+            COUNT(*) FILTER (WHERE elements && {light_arr}) as light_re_count,
+            COUNT(*) FILTER (WHERE elements && {heavy_arr}) as heavy_re_count
+        FROM materials
+        WHERE elements && {re_arr}
+    """))
+    row = result.first()
+    if not row:
+        return {
+            "total_with_rare_earth": 0,
+            "ratio": 0.0,
+            "light_re_count": 0,
+            "heavy_re_count": 0,
+            "most_common": []
+        }
+
+    total_with_re = row.total_with_rare_earth or 0
+    light_count = row.light_re_count or 0
+    heavy_count = row.heavy_re_count or 0
+
+    total_all = await db.scalar(text("SELECT COUNT(*) FROM materials")) or 0
+    ratio = total_with_re / total_all if total_all > 0 else 0.0
+
+    # Most common rare earth elements (top 5) — uses existing working bindparam approach
+    freq_result = await db.execute(
+        text("""
+            SELECT element, COUNT(*) as count
+            FROM (
+                SELECT unnest(elements) as element
+                FROM materials
+                WHERE elements IS NOT NULL
+            ) AS elements_expanded
+            WHERE element = ANY(:rare_earth_elements)
+            GROUP BY element
+            ORDER BY count DESC
+            LIMIT 5
+        """).bindparams(
+            bindparam("rare_earth_elements", value=RARE_EARTH_ELEMENTS, type_=PG_ARRAY(String))
+        )
+    )
+
+    most_common = [
+        {"element": r.element, "count": r.count}
+        for r in freq_result
+    ]
+
+    return {
+        "total_with_rare_earth": total_with_re,
+        "ratio": ratio,
+        "light_re_count": light_count,
+        "heavy_re_count": heavy_count,
+        "most_common": most_common
+    }
+
+
+@router.get("/rare_earth_frequency")
+async def get_rare_earth_frequency(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get frequency of each rare earth element across all materials.
+    """
+    # Get counts for all rare earth elements
+    freq_result = await db.execute(
+        text("""
+            SELECT element, COUNT(*) as count
+            FROM (
+                SELECT unnest(elements) as element
+                FROM materials
+                WHERE elements IS NOT NULL
+            ) AS elements_expanded
+            WHERE element = ANY(:rare_earth_elements)
+            GROUP BY element
+            ORDER BY count DESC
+        """).bindparams(
+            bindparam("rare_earth_elements", value=RARE_EARTH_ELEMENTS, type_=PG_ARRAY(String))
+        )
+    )
+
+    elements = []
+    for row in freq_result:
+        element = row.element
+        elements.append({
+            "element": element,
+            "name_cn": RARE_EARTH_NAMES_CN.get(element, ""),
+            "count": row.count,
+            "type": "light" if element in LIGHT_RE else "heavy"
+        })
+
+    return elements

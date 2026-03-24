@@ -167,6 +167,9 @@ class MaterialService:
         builder.add_range("volume", params.volume_min, params.volume_max)
         builder.add_range("density", params.density_min, params.density_max)
 
+        # 稀土筛选
+        builder.add_rare_earth_filter(params.contains_rare_earth, params.rare_earth_type)
+
         # 构建过滤条件
         conditions = builder.build()
         if conditions is not None:

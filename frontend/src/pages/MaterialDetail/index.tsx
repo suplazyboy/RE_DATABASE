@@ -16,6 +16,8 @@ import {
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useMaterialDetail } from '../../hooks/useMaterials';
 import { formatFormula, formatFloat, formatBoolean } from '../../utils/format';
+import CrystalViewer from '../../components/CrystalViewer';
+import { RARE_EARTH_ELEMENTS, LIGHT_RE, HEAVY_RE, RARE_EARTH_NAMES } from '../../utils/constants';
 
 const { Title } = Typography;
 const { TabPane } = Tabs;
@@ -53,7 +55,11 @@ const MaterialDetail = () => {
     return (
       <Space wrap>
         {elements.map((el) => (
-          <Tag key={el} color="blue">
+          <Tag
+            key={el}
+            color={RARE_EARTH_ELEMENTS.includes(el) ? 'gold' : 'blue'}
+            style={RARE_EARTH_ELEMENTS.includes(el) ? { fontWeight: 600 } : {}}
+          >
             {el}
           </Tag>
         ))}
@@ -61,10 +67,37 @@ const MaterialDetail = () => {
     );
   };
 
+  // 检测稀土元素
+  const hasRareEarth = material.elements?.some(el => RARE_EARTH_ELEMENTS.includes(el)) ?? false;
+  const hasLightRE = material.elements?.some(el => LIGHT_RE.includes(el)) ?? false;
+  const hasHeavyRE = material.elements?.some(el => HEAVY_RE.includes(el)) ?? false;
+  const rareEarthElements = material.elements?.filter(el => RARE_EARTH_ELEMENTS.includes(el)) ?? [];
+
+  // 颜色编码辅助函数
+  const getBandGapColor = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return '#999';
+    if (value === 0) return '#8c8c8c'; // 金属
+    if (value < 1) return '#cf1322';   // 窄带隙
+    if (value <= 3) return '#3f8600';  // 半导体
+    return '#1a3a5c';                  // 绝缘体
+  };
+
+  const getEnergyAboveHullColor = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return '#999';
+    if (value === 0) return '#3f8600';     // 稳定
+    if (value <= 0.05) return '#d4a017';   // 亚稳
+    return '#cf1322';                      // 不稳定
+  };
 
   // 核心指标卡片数据
   const coreMetrics = [
-    { title: 'Band Gap', value: material.band_gap, suffix: 'eV', precision: 3 },
+    {
+      title: 'Band Gap',
+      value: material.band_gap,
+      suffix: 'eV',
+      precision: 3,
+      valueStyle: { color: getBandGapColor(material.band_gap) }
+    },
     { title: 'Density', value: material.density, suffix: 'g/cm³', precision: 2 },
     { title: 'Volume', value: material.volume, suffix: 'Å³', precision: 2 },
     {
@@ -73,7 +106,13 @@ const MaterialDetail = () => {
       valueStyle: { color: material.is_stable ? '#3f8600' : '#cf1322' }
     },
     { title: 'Sites', value: material.nsites, suffix: '', precision: 0 },
-    { title: 'E above Hull', value: material.energy_above_hull, suffix: 'eV', precision: 4 },
+    {
+      title: 'E above Hull',
+      value: material.energy_above_hull,
+      suffix: 'eV',
+      precision: 4,
+      valueStyle: { color: getEnergyAboveHullColor(material.energy_above_hull) }
+    },
   ];
 
   return (
@@ -89,6 +128,28 @@ const MaterialDetail = () => {
       </Button>
       <Title level={3}>
         {material.material_id} — {formatFormula(material.formula_pretty)}
+        {hasRareEarth && (
+          <Space style={{ marginLeft: 16 }}>
+            <Tag color="gold" style={{ fontWeight: 600, fontSize: '14px' }}>
+              稀土材料
+            </Tag>
+            {hasLightRE && (
+              <Tag color="orange" style={{ fontSize: '14px' }}>
+                轻稀土
+              </Tag>
+            )}
+            {hasHeavyRE && (
+              <Tag color="cyan" style={{ fontSize: '14px' }}>
+                重稀土
+              </Tag>
+            )}
+            {rareEarthElements.length > 0 && (
+              <Tag color="default" style={{ fontSize: '14px' }}>
+                {rareEarthElements.map(el => RARE_EARTH_NAMES[el] || el).join(', ')}
+              </Tag>
+            )}
+          </Space>
+        )}
       </Title>
 
       {/* 核心指标卡片 */}
@@ -107,6 +168,30 @@ const MaterialDetail = () => {
           </Col>
         ))}
       </Row>
+
+      {/* 晶胞结构图 - 主展示区 */}
+      {material.cif && (
+        <Card
+          title="Unit Cell Structure"
+          style={{ marginBottom: 24 }}
+          extra={<Tag color="blue">Interactive 3D</Tag>}
+        >
+          <Alert
+            message="Drag to rotate, scroll to zoom, right-click to pan"
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+          <CrystalViewer
+            cif={material.cif}
+            height="500px"
+            backgroundColor="#fafafa"
+          />
+          <div style={{ marginTop: 16, textAlign: 'center', color: '#666' }}>
+            <small>显示晶体结构中原子位置与键连关系。CIF数据已存储在数据库中。</small>
+          </div>
+        </Card>
+      )}
 
       {/* 详细信息 Tabs */}
       <Tabs defaultActiveKey="basic" size="large">
@@ -146,6 +231,17 @@ const MaterialDetail = () => {
               {material.density ? `${formatFloat(material.density, 2)} g/cm³` : '-'}
             </Descriptions.Item>
           </Descriptions>
+        </TabPane>
+
+        <TabPane tab="Crystal Structure" key="crystal">
+          <Card title="Unit Cell Visualization" style={{ marginBottom: 16 }}>
+            <CrystalViewer cif={material.cif} />
+          </Card>
+          <Card title="CIF Data">
+            <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px', maxHeight: '400px', overflow: 'auto' }}>
+              {material.cif || 'No CIF data available.'}
+            </pre>
+          </Card>
         </TabPane>
 
         <TabPane tab="Thermodynamic Properties" key="thermodynamic">

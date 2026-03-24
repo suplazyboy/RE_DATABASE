@@ -23,8 +23,8 @@ export default function AppLayout() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ color: '#fff', fontSize: 18, fontWeight: 600, marginRight: 40 }}>
-          Crystal Materials DB
+        <div style={{ color: '#e0e0e0', fontSize: 18, fontWeight: 600, marginRight: 40, whiteSpace: 'nowrap' }}>
+          稀土材料晶体数据库
         </div>
         <Menu
           theme="dark"
@@ -35,11 +35,11 @@ export default function AppLayout() {
           style={{ flex: 1 }}
         />
       </Header>
-      <Content style={{ padding: '24px 48px' }}>
+      <Content style={{ padding: '24px', minWidth: 0 }}>
         <Outlet />
       </Content>
       <Footer style={{ textAlign: 'center' }}>
-        Crystal Materials Database ©{new Date().getFullYear()}
+        稀土材料晶体数据库 Rare Earth Crystal Materials Database ©{new Date().getFullYear()}
       </Footer>
     </Layout>
   );

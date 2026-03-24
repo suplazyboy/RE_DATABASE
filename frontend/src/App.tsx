@@ -24,8 +24,24 @@ function App() {
       <ConfigProvider
         theme={{
           token: {
-            colorPrimary: '#1677ff',
-            borderRadius: 6,
+            colorPrimary: '#1a3a5c',
+            colorSuccess: '#52c41a',
+            colorWarning: '#d4a017',
+            colorInfo: '#4a90d9',
+            borderRadius: 8,
+            colorBgContainer: '#ffffff',
+            colorBgLayout: '#f0f2f5',
+            fontFamily: "'Inter', 'Noto Sans SC', -apple-system, sans-serif",
+          },
+          components: {
+            Layout: {
+              headerBg: '#0d1b2a',
+              headerColor: '#e0e0e0',
+            },
+            Table: {
+              headerBg: '#f5f7fa',
+              headerColor: '#1a3a5c',
+            },
           },
         }}
       >

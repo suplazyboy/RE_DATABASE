@@ -23,6 +23,7 @@ export interface MaterialDetail extends MaterialSummary {
   structure: Record<string, unknown> | null;
   lattice: Record<string, unknown> | null;
   symmetry: Record<string, unknown> | null;
+  cif: string | null;
   space_group_number: number | null;
   point_group: string | null;
 

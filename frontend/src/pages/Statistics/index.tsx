@@ -1,14 +1,16 @@
-import { Card, Row, Col, Typography, Statistic, Spin, Alert } from 'antd';
+import { Card, Row, Col, Typography, Statistic, Spin, Alert, Divider } from 'antd';
+import ReactECharts from 'echarts-for-react';
 import BandGapChart from '../../components/Charts/BandGapChart';
 import ElementFrequencyChart from '../../components/Charts/ElementFrequencyChart';
 import CrystalSystemPie from '../../components/Charts/CrystalSystemPie';
-import StabilityChart from '../../components/Charts/StabilityChart';
 import {
   useSummary,
   useBandGapDistribution,
   useElementFrequency,
   useCrystalSystemDistribution,
   useStabilityDistribution,
+  useRareEarthSummary,
+  useRareEarthFrequency,
 } from '../../hooks/useStatistics';
 import { formatFloat } from '../../utils/format';
 
@@ -40,6 +42,9 @@ export default function Statistics() {
     isLoading: stabilityLoading,
     error: stabilityError,
   } = useStabilityDistribution();
+
+  const { data: reaSummary, isLoading: reaSummaryLoading } = useRareEarthSummary();
+  const { data: reaFrequency, isLoading: reaFrequencyLoading } = useRareEarthFrequency();
 
   const isLoading = summaryLoading || bandGapLoading || elementFrequencyLoading || crystalSystemLoading || stabilityLoading;
   const hasError = summaryError || bandGapError || elementFrequencyError || crystalSystemError || stabilityError;
@@ -142,7 +147,7 @@ export default function Statistics() {
           </Row>
 
           {/* 第二行：两个图表 */}
-          <Row gutter={[16, 16]}>
+          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
             <Col xs={24} lg={12}>
               <Card title="晶体系统分布">
                 <CrystalSystemPie
@@ -156,6 +161,108 @@ export default function Statistics() {
                 <CrystalSystemPie
                   data={stabilityPieData}
                   loading={stabilityLoading}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {/* 稀土专属统计板块 */}
+          <Divider style={{ fontSize: 16, fontWeight: 600, color: '#1a3a5c' }}>
+            稀土元素统计
+          </Divider>
+
+          {/* 稀土摘要卡片 */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="含稀土材料总数"
+                  value={reaSummary?.total_with_rare_earth ?? 0}
+                  loading={reaSummaryLoading}
+                  valueStyle={{ fontSize: 28, color: '#d4a017' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="占全库比例"
+                  value={reaSummary?.ratio ? formatFloat(reaSummary.ratio * 100, 1) : '0'}
+                  suffix="%"
+                  loading={reaSummaryLoading}
+                  valueStyle={{ fontSize: 28, color: '#d4a017' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="含轻稀土材料"
+                  value={reaSummary?.light_re_count ?? 0}
+                  loading={reaSummaryLoading}
+                  valueStyle={{ fontSize: 28, color: '#fa8c16' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="含重稀土材料"
+                  value={reaSummary?.heavy_re_count ?? 0}
+                  loading={reaSummaryLoading}
+                  valueStyle={{ fontSize: 28, color: '#13c2c2' }}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {/* 稀土图表行 */}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={16}>
+              <Card title="稀土元素出现频率">
+                <ReactECharts
+                  showLoading={reaFrequencyLoading}
+                  option={{
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    xAxis: { type: 'value', name: '材料数量' },
+                    yAxis: {
+                      type: 'category',
+                      data: (reaFrequency ?? []).slice().sort((a, b) => a.count - b.count).map(d => `${d.element} ${d.name_cn}`),
+                    },
+                    series: [{
+                      type: 'bar',
+                      data: (reaFrequency ?? []).slice().sort((a, b) => a.count - b.count).map(d => ({
+                        value: d.count,
+                        itemStyle: { color: d.type === 'light' ? '#fa8c16' : '#13c2c2' },
+                      })),
+                      label: { show: true, position: 'right', formatter: '{c}' },
+                    }],
+                    grid: { left: 80, right: 80, bottom: 40, top: 20 },
+                  }}
+                  style={{ height: 420, width: '100%' }}
+                  opts={{ renderer: 'canvas' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} lg={8}>
+              <Card title="轻/重稀土分布">
+                <ReactECharts
+                  showLoading={reaSummaryLoading}
+                  option={{
+                    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                    legend: { bottom: 0 },
+                    series: [{
+                      type: 'pie',
+                      radius: ['40%', '70%'],
+                      data: [
+                        { value: reaSummary?.light_re_count ?? 0, name: '轻稀土', itemStyle: { color: '#fa8c16' } },
+                        { value: reaSummary?.heavy_re_count ?? 0, name: '重稀土', itemStyle: { color: '#13c2c2' } },
+                      ],
+                      label: { formatter: '{b}\n{d}%' },
+                    }],
+                  }}
+                  style={{ height: 420, width: '100%' }}
+                  opts={{ renderer: 'canvas' }}
                 />
               </Card>
             </Col>
